@@ -46,7 +46,7 @@ def list_entities(
                ST_Y(geom) AS lat,
                ST_X(geom) AS lon,
                ST_AsGeoJSON(geom) AS geojson
-        FROM public.rj_entities
+        FROM public.entities
         ORDER BY name
         """
     )
@@ -93,12 +93,26 @@ def get_entities_nearby(
         description="Quando true, retorna GeoJSON (FeatureCollection).",
     ),
 ) -> list[NearbyEntity] | GeoJSONFeatureCollection:
+    base_query = text(
+        """
+        SELECT 1
+        FROM public.entities
+        WHERE name = :entity
+        """
+    )
+    total_count_query = text(
+        """
+        SELECT COUNT(*) AS total
+        FROM public.entities
+        WHERE name <> :entity
+        """
+    )
     if geojson:
         query = text(
             """
             WITH base AS (
                 SELECT id, name, geom
-                FROM public.rj_entities
+                FROM public.entities
                 WHERE name = :entity
             )
             SELECT e2.id,
@@ -108,7 +122,7 @@ def get_entities_nearby(
                    ST_AsGeoJSON(e2.geom) AS geojson,
                    false AS is_base
             FROM base e1
-            JOIN public.rj_entities e2
+            JOIN public.entities e2
               ON ST_DWithin(e1.geom::geography, e2.geom::geography, :range_meters)
             WHERE e2.name <> e1.name
             UNION ALL
@@ -128,16 +142,38 @@ def get_entities_nearby(
                    e2.name,
                    ST_Y(e2.geom) AS lat,
                    ST_X(e2.geom) AS lon
-            FROM public.rj_entities e1
-            JOIN public.rj_entities e2
+            FROM public.entities e1
+            JOIN public.entities e2
               ON ST_DWithin(e1.geom::geography, e2.geom::geography, :range_meters)
             WHERE e1.name = :entity
               AND e2.name <> e1.name
             """
         )
     with get_engine().connect() as connection:
-        rows = connection.execute(query, {"entity": entity, "range_meters": range_meters})
-        items = rows.mappings().all()
+        base_exists = connection.execute(base_query, {"entity": entity}).first()
+        if not base_exists:
+            if geojson:
+                return GeoJSONFeatureCollection(features=[])
+            return []
+        total_available = connection.execute(
+            total_count_query, {"entity": entity}
+        ).scalar_one()
+        target_count = min(10, total_available)
+        current_range = range_meters
+        items = []
+        nearby_count = 0
+        while nearby_count < target_count:
+            rows = connection.execute(
+                query, {"entity": entity, "range_meters": current_range}
+            )
+            items = rows.mappings().all()
+            if geojson:
+                nearby_count = sum(1 for item in items if not item["is_base"])
+            else:
+                nearby_count = len(items)
+            if nearby_count >= target_count:
+                break
+            current_range += 10000
         if not geojson:
             return [NearbyEntity(**row) for row in items]
         features = [

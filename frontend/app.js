@@ -28,6 +28,7 @@ const circleSourceId = "range-circle";
 const circleFillLayerId = "range-circle-fill";
 const circleLineLayerId = "range-circle-line";
 const interactiveLayers = new Set();
+let userMarker = null;
 
 function setStatus(message) {
   statusText.textContent = message;
@@ -272,6 +273,28 @@ async function handleSubmit(event) {
 
 map.on("load", () => {
   form.addEventListener("submit", handleSubmit);
+  const mapLoadCenter = map.getCenter();
+  if ("geolocation" in navigator) {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        const center = [longitude, latitude];
+        map.flyTo({ center, zoom: 13, speed: 0.9 });
+        if (!userMarker) {
+          userMarker = new maplibregl.Marker({ color: "#2f6f5e" });
+        }
+        userMarker.setLngLat(center).addTo(map);
+        setStatus("Localizacao detectada.");
+      },
+      () => {
+        setStatus("Nao foi possivel obter a localizacao.");
+        map.setCenter(mapLoadCenter);
+      },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+    );
+  } else {
+    setStatus("Geolocalizacao nao suportada no navegador.");
+  }
   fetchAllEntities()
     .then((data) => {
       updateAllEntities(data);
