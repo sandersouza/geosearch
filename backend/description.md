@@ -1,0 +1,1 @@
+FastAPI REST API for the GeoSearch project. Routers are auto-discovered from `app/routers` and exposed in Swagger.

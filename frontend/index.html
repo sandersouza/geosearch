@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GeoSearch | Mapa de Entidades</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600&family=Space+Grotesk:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/maplibre-gl@3.6.1/dist/maplibre-gl.css"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="panel">
+        <div class="panel-header">
+          <p class="eyebrow">GeoSearch</p>
+          <h1>Mapa de entidades proximas</h1>
+          <p class="lede">
+            Consulte o backend e veja os pontos GeoJSON plotados no mapa.
+          </p>
+        </div>
+        <form id="search-form" class="panel-form">
+          <label>
+            Entidade base
+            <input
+              id="entity-input"
+              name="entity"
+              type="text"
+              placeholder="Ex: entidade_9977_d8f5c1"
+              value=""
+              required
+            />
+          </label>
+          <label>
+            Raio (metros)
+            <input
+              id="range-input"
+              name="range"
+              type="number"
+              min="1"
+              step="1"
+              value="10000"
+              required
+            />
+          </label>
+          <button type="submit">Buscar entidades</button>
+        </form>
+        <div class="panel-status">
+          <div>
+            <p class="label">Status</p>
+            <p id="status-text">Pronto para buscar.</p>
+          </div>
+          <div>
+            <p class="label">Resultados</p>
+            <p id="count-text">-</p>
+          </div>
+        </div>
+        <div class="panel-results">
+          <p class="label">Entidades encontradas</p>
+          <ul id="results-list"></ul>
+        </div>
+        <div class="panel-footer">
+          <p>
+            Estilo do mapa: MapLibre + OSM. API em
+            <span class="chip">localhost:8000</span>
+          </p>
+        </div>
+      </aside>
+      <main class="map-wrap">
+        <div id="map"></div>
+        <div class="map-overlay">
+          <p>Arraste e use o scroll para explorar o bairro.</p>
+        </div>
+      </main>
+    </div>
+    <script src="https://unpkg.com/maplibre-gl@3.6.1/dist/maplibre-gl.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
